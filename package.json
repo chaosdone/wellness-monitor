@@ -1,0 +1,16 @@
+{
+  "name": "wellness-monitor",
+  "version": "1.0.0",
+  "description": "Monitor WellnessLiving appointment availability for Jiyu Kim at ReJenerate Pilates",
+  "main": "monitor.js",
+  "scripts": {
+    "start": "node monitor.js",
+    "postinstall": "npx playwright install chromium --with-deps"
+  },
+  "dependencies": {
+    "playwright": "^1.50.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

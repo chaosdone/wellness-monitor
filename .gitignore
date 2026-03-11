@@ -1,0 +1,5 @@
+config.json
+.chrome-session/
+logs/
+node_modules/
+.DS_Store
