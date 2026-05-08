@@ -451,14 +451,12 @@ function cleanStaleLockFiles() {
 }
 
 async function main() {
-  log('=== WellnessLiving Slot Monitor ===');
-  log(`Environment: ${IS_CLOUD ? 'cloud' : 'local'}`);
-
   fs.mkdirSync(SESSION_DIR, { recursive: true });
   fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
-
-  // Clear log file on startup
   fs.writeFileSync(LOG_FILE, '');
+
+  log('=== WellnessLiving Slot Monitor ===');
+  log(`Environment: ${IS_CLOUD ? 'cloud' : 'local'}`);
 
   if (!IS_CLOUD) {
     if (!await waitForNetwork()) {
