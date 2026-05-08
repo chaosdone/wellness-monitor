@@ -35,7 +35,7 @@ function playSound() {
   }
 }
 
-const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || config.telegramToken || '8613840411:AAFTt7ysh3nXgx7vNRNPySXyWbFf8Z7HCJA';
+const TELEGRAM_TOKEN = process.env.TELEGRAM_TOKEN || config.telegramToken;
 const SUBSCRIBERS_FILE = path.resolve(__dirname, 'subscribers.json');
 
 function loadSubscribers() {
