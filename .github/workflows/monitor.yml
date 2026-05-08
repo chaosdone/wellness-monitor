@@ -2,7 +2,8 @@ name: Wellness Monitor
 
 on:
   schedule:
-    - cron: '5 15-6 * * *'  # Every hour :05, 7:05am-10:05pm PST (UTC-8 → 15:05-06:05 UTC)
+    - cron: '5 15-23 * * *'  # 7:05am-3:05pm PST (UTC-8)
+    - cron: '5 0-6 * * *'    # 4:05pm-10:05pm PST (UTC-8)
   workflow_dispatch: {}
 
 jobs:
