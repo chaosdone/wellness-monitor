@@ -370,8 +370,9 @@ async function checkGroupClasses(page) {
           const time = lines[i];
           const staff = lines[i + 2] || '';
           const availability = lines[i + 5] || '';
+          const bookingNote = lines[i + 6] || '';
           if (staff.includes('Jiyu Kim')) {
-            classes.push({ day: currentDay, time, availability });
+            classes.push({ day: currentDay, time, availability, bookingSoon: bookingNote.includes('Booking starts soon') });
           }
         }
       }
@@ -381,9 +382,11 @@ async function checkGroupClasses(page) {
     for (const c of weekData) {
       const avail = c.availability.match(/(\d+)\/(\d+)/);
       const spotsLeft = avail ? parseInt(avail[1]) : 0;
+      const isBookable = spotsLeft > 0 && !c.bookingSoon;
       const label = `${c.day} ${c.time} (${c.availability})`;
-      log(`  ${spotsLeft > 0 ? 'AVAILABLE' : 'full'}: ${label}`);
-      if (spotsLeft > 0) {
+      const status = c.bookingSoon ? 'not open' : (spotsLeft > 0 ? 'AVAILABLE' : 'full');
+      log(`  ${status}: ${label}`);
+      if (isBookable) {
         allClasses.push(label);
       }
     }
