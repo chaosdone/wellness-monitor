@@ -15,7 +15,7 @@ Sends notifications via Telegram bot to all subscribers.
 ## How It Works
 1. Checks for new Telegram `/start` subscribers
 2. **Private Session check**: Opens appointment page → logs in if needed → selects Private Session (1:1) → Jiyu Kim → scrapes calendar for available (non-waitlist) slots across 2 months
-3. **Happy Hour check**: Opens schedule page → Group Class → Happy Hour All Level → scrapes Jiyu Kim's classes across 4 weeks, looking for availability > 0
+3. **Group Class check**: Opens schedule page → Group Class tab (no class-type filter) → scrapes ALL Jiyu Kim classes across 4 weeks, looking for availability > 0
 4. Sends Telegram notification to all subscribers if any availability found
 5. Retries each check once on failure (MAX_RETRIES = 2)
 

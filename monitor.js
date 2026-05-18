@@ -320,7 +320,7 @@ async function checkAvailability(page) {
 }
 
 async function checkGroupClasses(page) {
-  log('--- Checking Happy Hour group classes ---');
+  log('--- Checking ALL group classes for Jiyu Kim ---');
 
   await page.goto(SCHEDULE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(5000);
@@ -332,15 +332,6 @@ async function checkGroupClasses(page) {
     return;
   }
   await groupTab.click();
-  await page.waitForTimeout(3000);
-
-  // Click Happy Hour All Level
-  const happyHour = page.locator('[data-title-backup="Happy Hour All Level"]').first();
-  if (!await happyHour.isVisible({ timeout: 5000 }).catch(() => false)) {
-    log('WARNING: Happy Hour All Level not found');
-    return;
-  }
-  await happyHour.click();
   await page.waitForTimeout(3000);
 
   const allClasses = [];
@@ -368,11 +359,12 @@ async function checkGroupClasses(page) {
         const timeMatch = lines[i].match(/^\d{1,2}:\d{2}(am|pm)\s*-\s*\d{1,2}:\d{2}(am|pm)$/);
         if (timeMatch && currentDay) {
           const time = lines[i];
+          const className = lines[i + 1] || '';
           const staff = lines[i + 2] || '';
           const availability = lines[i + 5] || '';
           const bookingNote = lines[i + 6] || '';
           if (staff.includes('Jiyu Kim')) {
-            classes.push({ day: currentDay, time, availability, bookingSoon: bookingNote.includes('Booking starts soon') });
+            classes.push({ day: currentDay, time, className, availability, bookingSoon: bookingNote.includes('Booking starts soon') });
           }
         }
       }
@@ -383,7 +375,7 @@ async function checkGroupClasses(page) {
       const avail = c.availability.match(/(\d+)\/(\d+)/);
       const spotsLeft = avail ? parseInt(avail[1]) : 0;
       const isBookable = spotsLeft > 0 && !c.bookingSoon;
-      const label = `${c.day} ${c.time} (${c.availability})`;
+      const label = `${c.className} - ${c.day} ${c.time} (${c.availability})`;
       const status = c.bookingSoon ? 'not open' : (spotsLeft > 0 ? 'AVAILABLE' : 'full');
       log(`  ${status}: ${label}`);
       if (isBookable) {
@@ -393,10 +385,10 @@ async function checkGroupClasses(page) {
   }
 
   if (allClasses.length > 0) {
-    log('*** HAPPY HOUR AVAILABILITY FOUND ***');
-    await sendNotification(`🎉 Jiyu Kim Happy Hour 有空位!\n${allClasses.join('\n')}`);
+    log('*** GROUP CLASS AVAILABILITY FOUND ***');
+    await sendNotification(`🎉 Jiyu Kim Group Class 有空位!\n${allClasses.join('\n')}`);
   } else {
-    log('No available Happy Hour spots with Jiyu Kim.');
+    log('No available group class spots with Jiyu Kim.');
   }
 }
 
