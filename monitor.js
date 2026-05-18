@@ -313,10 +313,11 @@ async function checkAvailability(page) {
   if (allSlots.length > 0) {
     log('*** AVAILABILITY FOUND ***');
     playSound();
-    await sendNotification(`🎉 Jiyu Kim Private Session 有空位!\n${allSlots.join('\n')}`);
   } else {
     log('No available (non-waitlist) slots.');
   }
+
+  return allSlots;
 }
 
 async function checkGroupClasses(page) {
@@ -386,18 +387,22 @@ async function checkGroupClasses(page) {
 
   if (allClasses.length > 0) {
     log('*** GROUP CLASS AVAILABILITY FOUND ***');
-    await sendNotification(`🎉 Jiyu Kim Group Class 有空位!\n${allClasses.join('\n')}`);
   } else {
     log('No available group class spots with Jiyu Kim.');
   }
+
+  return allClasses;
 }
 
 const MAX_RETRIES = 2;
 
 async function runCheck(page) {
+  let privateSlots = [];
+  let groupClasses = [];
+
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      await checkAvailability(page);
+      privateSlots = await checkAvailability(page);
       break;
     } catch (err) {
       log(`Error during appointment check (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`);
@@ -410,7 +415,7 @@ async function runCheck(page) {
   }
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      await checkGroupClasses(page);
+      groupClasses = await checkGroupClasses(page);
       break;
     } catch (err) {
       log(`Error during group class check (attempt ${attempt}/${MAX_RETRIES}): ${err.message}`);
@@ -420,6 +425,19 @@ async function runCheck(page) {
         await page.waitForTimeout(15000);
       }
     }
+  }
+
+  if (privateSlots.length > 0 || groupClasses.length > 0) {
+    const parts = ['🎉 Jiyu Kim 有空位!'];
+    if (privateSlots.length > 0) {
+      parts.push('\n📌 Private Session:');
+      parts.push(privateSlots.join('\n'));
+    }
+    if (groupClasses.length > 0) {
+      parts.push('\n📌 Group Class:');
+      parts.push(groupClasses.join('\n'));
+    }
+    await sendNotification(parts.join('\n'));
   }
 }
 
