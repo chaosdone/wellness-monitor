@@ -178,7 +178,7 @@ async function navigateToCalendar(page) {
   bodyText = await page.textContent('body');
 
   // Step 2: Select Jiyu Kim
-  const jiyuKim = page.locator('div.js-staff-element[data-staff="617910"]');
+  const jiyuKim = page.locator('div.js-staff-element').filter({ hasText: 'Jiyu Kim' }).first();
   if (await jiyuKim.isVisible({ timeout: 5000 }).catch(() => false)) {
     log('Step 2: Selecting Jiyu Kim...');
     await jiyuKim.scrollIntoViewIfNeeded();
@@ -293,10 +293,10 @@ async function checkAvailability(page) {
   // Scan current month + next month(s)
   for (let m = 0; m < MONTHS_TO_SCAN; m++) {
     if (m > 0) {
-      // Click the forward arrow to go to next month
-      const nextArrow = page.locator('span.js-wl-appointment-book-schedule-calendar-next');
-      if (await nextArrow.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await nextArrow.click();
+      // Click "View next month" (may be a div or span with this class)
+      const nextArrow = page.locator('.js-wl-appointment-book-schedule-calendar-next:visible');
+      if (await nextArrow.first().isVisible({ timeout: 3000 }).catch(() => false)) {
+        await nextArrow.first().click();
         await page.waitForTimeout(3000);
       } else {
         log('No next month arrow found, stopping.');
@@ -330,51 +330,64 @@ async function checkGroupClasses(page) {
   const groupTab = page.locator('text=Group Class').first();
   if (!await groupTab.isVisible({ timeout: 5000 }).catch(() => false)) {
     log('WARNING: Group Class tab not found');
-    return;
+    return [];
   }
   await groupTab.click();
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(5000);
 
   const allClasses = [];
 
   for (let week = 0; week < WEEKS_TO_SCAN; week++) {
     if (week > 0) {
-      const nextArrow = page.locator('.js-schedule-list-filter-step.css-schedule-filter-calendar-arrow-right, .css-fa--chevron-right.js-schedule-list-filter-step');
+      const dateBtn = page.locator('button[title*="2026"]').first();
+      const nextArrow = dateBtn.locator('xpath=following-sibling::button[1]');
       if (!await nextArrow.isVisible({ timeout: 3000 }).catch(() => false)) break;
       await nextArrow.click();
       await page.waitForTimeout(3000);
     }
 
     const weekData = await page.evaluate(() => {
-      const container = document.querySelector('.js-schedule-list-container');
-      if (!container) return [];
-      const lines = container.innerText.split('\n').map(l => l.trim()).filter(l => l);
+      const text = document.body.innerText;
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l);
       const classes = [];
       let currentDay = '';
+
       for (let i = 0; i < lines.length; i++) {
-        const dayMatch = lines[i].match(/(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s+(\w+ \d+, \d{4})/);
+        const dayMatch = lines[i].match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s+(\w+ \d+,\s*\d{4})/);
         if (dayMatch) {
-          currentDay = dayMatch[0].replace(' (Today)', '');
+          currentDay = lines[i];
           continue;
         }
-        const timeMatch = lines[i].match(/^\d{1,2}:\d{2}(am|pm)\s*-\s*\d{1,2}:\d{2}(am|pm)$/);
-        if (timeMatch && currentDay) {
-          const time = lines[i];
-          const className = lines[i + 1] || '';
-          const staff = lines[i + 2] || '';
-          const availability = lines[i + 5] || '';
-          const bookingNote = lines[i + 6] || '';
-          if (staff.includes('Jiyu Kim')) {
-            classes.push({ day: currentDay, time, className, availability, bookingSoon: bookingNote.includes('Booking starts soon') });
+        if (lines[i].includes('Jiyu Kim') && currentDay) {
+          let time = '', className = '', availability = '', bookingSoon = false;
+          for (let j = i - 1; j >= Math.max(0, i - 6); j--) {
+            if (lines[j].match(/^\d{1,2}:\d{2}\s*(am|pm)\s*PT$/i)) {
+              time = lines[j];
+              break;
+            }
           }
+          for (let j = i - 1; j >= Math.max(0, i - 4); j--) {
+            if (lines[j].match(/(Pilates|Barre|Happy Hour|Reformer|Core|Beginner|Sculpt)/i)) {
+              className = lines[j];
+              break;
+            }
+          }
+          for (let j = i + 1; j <= Math.min(lines.length - 1, i + 4); j++) {
+            if (lines[j].match(/(spot|waitlist|Booking starts)/i)) {
+              availability = lines[j];
+              if (lines[j].includes('Booking starts')) bookingSoon = true;
+              break;
+            }
+          }
+          classes.push({ day: currentDay, time, className, availability, bookingSoon });
         }
       }
       return classes;
     });
 
     for (const c of weekData) {
-      const avail = c.availability.match(/(\d+)\/(\d+)/);
-      const spotsLeft = avail ? parseInt(avail[1]) : 0;
+      const spotsMatch = c.availability.match(/(\d+)\s*spots?\s*left/i);
+      const spotsLeft = spotsMatch ? parseInt(spotsMatch[1]) : 0;
       const isBookable = spotsLeft > 0 && !c.bookingSoon;
       const label = `${c.className} - ${c.day} ${c.time} (${c.availability})`;
       const status = c.bookingSoon ? 'not open' : (spotsLeft > 0 ? 'AVAILABLE' : 'full');
