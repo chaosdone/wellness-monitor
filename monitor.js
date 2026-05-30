@@ -385,7 +385,16 @@ async function checkGroupClasses(page) {
       return classes;
     });
 
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Vancouver' });
+
     for (const c of weekData) {
+      const dateMatch = c.day.match(/(\w+)\s+(\d+),\s*(\d{4})/);
+      if (dateMatch) {
+        const classDate = new Date(`${dateMatch[1]} ${dateMatch[2]}, ${dateMatch[3]}`);
+        const classDayStr = classDate.toLocaleDateString('en-CA');
+        if (classDayStr < today) continue;
+      }
+
       const spotsMatch = c.availability.match(/(\d+)\s*spots?\s*left/i);
       const spotsLeft = spotsMatch ? parseInt(spotsMatch[1]) : 0;
       const isBookable = spotsLeft > 0 && !c.bookingSoon;
