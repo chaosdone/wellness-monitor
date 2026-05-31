@@ -372,14 +372,17 @@ async function checkGroupClasses(page) {
               break;
             }
           }
-          for (let j = i + 1; j <= Math.min(lines.length - 1, i + 4); j++) {
-            if (lines[j].match(/(spot|waitlist|Booking starts)/i)) {
+          let bookingClosed = false;
+          for (let j = i + 1; j <= Math.min(lines.length - 1, i + 6); j++) {
+            if (lines[j].match(/(spot|waitlist|Booking starts)/i) && !availability) {
               availability = lines[j];
               if (lines[j].includes('Booking starts')) bookingSoon = true;
-              break;
+            }
+            if (lines[j].match(/Booking is closed/i)) {
+              bookingClosed = true;
             }
           }
-          classes.push({ day: currentDay, time, className, availability, bookingSoon });
+          classes.push({ day: currentDay, time, className, availability, bookingSoon, bookingClosed });
         }
       }
       return classes;
@@ -397,9 +400,9 @@ async function checkGroupClasses(page) {
 
       const spotsMatch = c.availability.match(/(\d+)\s*spots?\s*left/i);
       const spotsLeft = spotsMatch ? parseInt(spotsMatch[1]) : 0;
-      const isBookable = spotsLeft > 0 && !c.bookingSoon;
+      const isBookable = spotsLeft > 0 && !c.bookingSoon && !c.bookingClosed;
       const label = `${c.className} - ${c.day} ${c.time} (${c.availability})`;
-      const status = c.bookingSoon ? 'not open' : (spotsLeft > 0 ? 'AVAILABLE' : 'full');
+      const status = (c.bookingSoon || c.bookingClosed) ? 'not open' : (spotsLeft > 0 ? 'AVAILABLE' : 'full');
       log(`  ${status}: ${label}`);
       if (isBookable) {
         allClasses.push(label);
